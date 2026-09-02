@@ -1,0 +1,13 @@
+[project]
+name = "mcp-git-manager"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastmcp>=4.0.0",
+    "requests>=2.34.2",
+]
+
+[tool.uv.workspace]
+members = [
+    "my-mcp-server",
+]
