@@ -46,7 +46,13 @@ async def show_diff():
         "git://repository/diff"
     )
     print("diff")
-    print(content[0].text)
+    diff_data = json.loads(content[0].text)
+
+    print("\nUnstaged 변경사항")
+    print(diff_data["unstaged"] or "변경사항 없음")
+
+    print("\nStaged 변경사항")
+    print(diff_data["staged"] or "변경사항 없음")
 
 if __name__ == "__main__":
     asyncio.run(main())
