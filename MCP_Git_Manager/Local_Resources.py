@@ -116,4 +116,38 @@ def get_recent_commits():
         "commits": commits,
     }
 
+def get_git_remotes() ->dict:
+    result = run_git_command([
+        "remote", # 원격 저장소 정보
+        "-v",     # 연결 주소까지 자세히 출력
+        #출력 예시
+        # origin  https://github.com/user/MCP_Collections.git (fetch)
+        # origin  https://github.com/user/MCP_Collections.git (push)
+    ])
+
+    if not result["success"]:
+        return result
+
+    remotes = {}
+
+    for line in result["output"].splitlines():
+        parts = line.split()
+
+        if len(parts) != 3:
+            continue
+
+        name = parts[0]
+        url = parts[1]
+        operation = parts[2].strip("()")
+
+        if name not in remotes:
+            remotes[name] = {}
+
+        remotes[name][operation] = url
+
+    return {
+        "success": True,
+        "repository": repository_path.name,
+        "remotes": remotes,
+    }
 
