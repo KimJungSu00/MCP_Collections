@@ -2,6 +2,8 @@
 
 import GitHUB_API_Resources
 import Local_Resources
+import Resource_Prompts
+import Local_Tools
 
 
 mcp = FastMCP(name ="Git Manager")
@@ -132,6 +134,81 @@ def get_github_pull_requests(
         owner,
         repo,
     )
+
+@mcp.resource(
+    "github://repos/{owner}/{repo}/pulls/{pull_number}",
+    mime_type="application/json",
+)
+def get_github_pull_request(
+    owner: str,
+    repo: str,
+    pull_number: int,
+) -> dict:
+    """특정 Pull Request의 상세 정보를 반환합니다."""
+
+    return GitHUB_API_Resources.get_github_pull_request(
+        owner,
+        repo,
+        pull_number,
+    )
+
+@mcp.resource(
+    "github://repos/{owner}/{repo}/labels",
+    mime_type="application/json",
+)
+def get_github_labels(
+    owner: str,
+    repo: str,
+) -> dict:
+    """GitHub 저장소에 등록된 라벨 목록을 반환합니다."""
+
+    return GitHUB_API_Resources.get_github_labels(
+        owner,
+        repo,
+    )
+
+@mcp.prompt
+def write_bug_report(problem:str, environment:str = "") -> str:
+    """사용자의 문제 설명으로 GitHub 버그 리포트 작성 지침을 생성합니다."""
+    return Resource_Prompts.make_bug_report_prompt(
+        problem,
+        environment,
+    )
+
+@mcp.tool
+def create_github_issue(
+    owner: str,
+    repo: str,
+    title: str,
+    body: str,
+    labels: list[str] | None = None,
+) -> dict:
+    """GitHub 저장소에 새로운 Issue를 생성합니다."""
+    return GitHUB_API_Resources.create_github_issue(
+        owner=owner,
+        repo=repo,
+        title=title,
+        body=body,
+        labels=labels,
+    )
+
+@mcp.prompt
+def write_commit_message(
+    diff: str,
+) -> str:
+    """Git diff를 분석하는 커밋 메시지 작성 지침을 생성합니다."""
+    return Resource_Prompts.make_commit_message_prompt(
+        diff
+    )
+
+@mcp.tool
+def stage_files(
+    paths: list[str],
+) -> dict:
+    """지정한 파일들을 Git staging 영역에 추가합니다."""
+    return Local_Tools.stage_files(paths)
+
+
 
 if __name__ == "__main__":
     mcp.run()
