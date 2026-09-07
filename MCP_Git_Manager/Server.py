@@ -232,6 +232,7 @@ def pull_current_branch(remote: str = "origin") -> dict:
     """원격 저장소에서 현재 브랜치의 변경사항을 가져옵니다."""
     return Local_Tools.pull_current_branch(remote)
 
+#테스트
 
 if __name__ == "__main__":
     mcp.run()
