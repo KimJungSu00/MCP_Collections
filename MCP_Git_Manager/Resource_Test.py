@@ -636,7 +636,7 @@ async def test_pull():
 
 async def main():
     async with mcp_client:
-        await test_push_current_branch()
+        await test_pull()
 
 if __name__ == "__main__":
     asyncio.run(main())
