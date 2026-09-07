@@ -208,6 +208,16 @@ def stage_files(
     """지정한 파일들을 Git staging 영역에 추가합니다."""
     return Local_Tools.stage_files(paths)
 
+@mcp.tool
+def commit_changes(
+    subject: str,
+    body: str = "",
+) -> dict:
+    """현재 staged 변경사항을 새로운 Git 커밋으로 생성합니다."""
+    return Local_Tools.commit_changes(
+        subject,
+        body,
+    )
 
 
 if __name__ == "__main__":
