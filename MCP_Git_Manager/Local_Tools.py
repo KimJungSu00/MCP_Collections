@@ -163,3 +163,217 @@ def commit_changes(subject: str, body: str = "") -> dict:
             "",
         ),
     }
+
+
+def push_current_branch(remote: str = "origin") -> dict:
+    branch_result = Git_Command.run_git_command(
+        [
+            "branch",
+            "--show-current",
+        ]
+    )
+
+    if not branch_result["success"]:
+        return {
+            "success": False,
+            "error": branch_result.get(
+                "error",
+                "현재 브랜치 확인에 실패했습니다.",
+            ),
+        }
+
+    branch = branch_result.get(
+        "output",
+        "",
+    ).strip()
+
+    if not branch:
+        return{
+            "success": False,
+            "error":(
+                "현재 브랜치를 확인할 수 없습니다"
+                "detached HEAD 상태일 수 있습니다"
+            )
+        }
+
+    remote_result = Git_Command.run_git_command(
+        [
+            "remote",
+            "get-url",
+            remote,
+        ]
+    )
+
+    if not remote_result["success"]:
+        return {
+            "success": False,
+            "error": remote_result.get(
+                "error",
+                f"원격 저장소 '{remote}'를 찾을 수 없습니다.",
+            ),
+        }
+
+
+    remote_url = remote_result.get(
+        "output",
+        "",
+    ).strip()
+
+    # 현재 브랜치 push
+    push_result = Git_Command.run_git_command(
+        [
+
+            "push",
+            "-u", # -u : 로컬 브랜치와 원격 브랜치의 추적 관계 설정
+            remote,
+            branch,
+        ]
+        # 현재 브랜치가 feature일 경우 위의 명령어는 다음과 같음
+        # git push -u origin feature
+
+    )
+
+    if not push_result["success"]:
+        return {
+            "success": False,
+            "branch": branch,
+            "remote": remote,
+            "error": push_result.get(
+                "error",
+                "Git push에 실패했습니다.",
+            ),
+        }
+
+    return {
+        "success": True,
+        "branch": branch,
+        "remote": remote,
+        "remote_url": remote_url,
+        "output": push_result.get(
+            "output",
+            "",
+        ),
+    }
+
+
+def pull_current_branch(remote: str = "origin") -> dict:
+
+    # 현재 브랜치 확인
+    branch_result = Git_Command.run_git_command(
+        [
+            "branch",
+            "--show-current",
+        ]
+    )
+
+    if not branch_result["success"]:
+        return {
+            "success": False,
+            "error": branch_result.get(
+                "error",
+                "현재 브랜치 확인에 실패했습니다.",
+            ),
+        }
+
+    branch = branch_result.get(
+        "output",
+        "",
+    ).strip()
+
+    if not branch:
+        return {
+            "success": False,
+            "error": (
+                "현재 브랜치를 확인할 수 없습니다. "
+                "detached HEAD 상태일 수 있습니다."
+            ),
+        }
+
+    # 로컬 변경사항 확인
+    status_result = Git_Command.run_git_command(
+        [
+            "status",
+            "--porcelain",
+        ]
+    )
+
+    if not status_result["success"]:
+        return {
+            "success": False,
+            "error": status_result.get(
+                "error",
+                "Git 상태 확인에 실패했습니다.",
+            ),
+        }
+
+    changed_files = status_result.get(
+        "output",
+        "",
+    ).strip()
+
+    if changed_files:
+        return {
+            "success": False,
+            "branch": branch,
+            "error": (
+                "커밋되지 않은 로컬 변경사항이 있습니다. "
+                "먼저 commit하거나 변경사항을 정리해 주세요."
+            ),
+            "changed_files": changed_files.splitlines(),
+        }
+
+    # 원격 저장소 확인
+    remote_result = Git_Command.run_git_command(
+        [
+            "remote",
+            "get-url",
+            remote,
+        ]
+    )
+
+    if not remote_result["success"]:
+        return {
+            "success": False,
+            "error": remote_result.get(
+                "error",
+                f"원격 저장소 '{remote}'를 찾을 수 없습니다.",
+            ),
+        }
+
+    # 현재 브랜치 pull
+    # ff-only : 브랜치를 단순히 앞으로 이동할 수 있을때만 pull 한다
+    pull_result = Git_Command.run_git_command(
+        [
+            "pull",
+            "--ff-only",
+            remote,
+            branch,
+        ]
+    )
+
+    if not pull_result["success"]:
+        return {
+            "success": False,
+            "branch": branch,
+            "remote": remote,
+            "error": pull_result.get(
+                "error",
+                "Git pull에 실패했습니다.",
+            ),
+        }
+
+    return {
+        "success": True,
+        "branch": branch,
+        "remote": remote,
+        "remote_url": remote_result.get(
+            "output",
+            "",
+        ),
+        "output": pull_result.get(
+            "output",
+            "",
+        ),
+    }
+
+

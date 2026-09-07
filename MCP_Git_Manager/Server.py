@@ -220,6 +220,18 @@ def commit_changes(
         body,
     )
 
+@mcp.tool
+def push_current_branch(remote: str = "origin") -> dict:
+    """현재 브랜치의 커밋을 원격 Git 저장소로 push합니다."""
+    return Local_Tools.push_current_branch(
+        remote
+    )
+
+@mcp.tool
+def pull_current_branch(remote: str = "origin") -> dict:
+    """원격 저장소에서 현재 브랜치의 변경사항을 가져옵니다."""
+    return Local_Tools.pull_current_branch(remote)
+
 
 if __name__ == "__main__":
     mcp.run()
