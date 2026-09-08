@@ -377,3 +377,81 @@ def pull_current_branch(remote: str = "origin") -> dict:
     }
 
 
+def create_and_switch_branch(branch_name: str) -> dict:
+
+    branch_name = branch_name.strip()
+
+    if not branch_name:
+        return {
+            "success": False,
+            "error": "브랜치 이름이 비어 있습니다.",
+        }
+
+    # 현재 브랜치 확인
+    current_result = Git_Command.run_git_command(
+        [
+            "branch",
+            "--show-current",
+        ]
+    )
+
+    if not current_result["success"]:
+        return {
+            "success": False,
+            "error": current_result.get(
+                "error",
+                "현재 브랜치 확인에 실패했습니다.",
+            ),
+        }
+
+    previous_branch = current_result.get(
+        "output",
+        "",
+    ).strip()
+
+    # 브랜치 이름 유효성 확인
+    check_result = Git_Command.run_git_command(
+        [
+            "check-ref-format",
+            "--branch",
+            branch_name,
+        ]
+    )
+
+    if not check_result["success"]:
+        return {
+            "success": False,
+            "error": check_result.get(
+                "error",
+                "사용할 수 없는 브랜치 이름입니다.",
+            ),
+        }
+
+    # 새 브랜치 생성 후 이동
+    switch_result = Git_Command.run_git_command(
+        [
+            "switch",
+            "-c",
+            branch_name,
+        ]
+    )
+
+    if not switch_result["success"]:
+        return {
+            "success": False,
+            "error": switch_result.get(
+                "error",
+                "브랜치 생성에 실패했습니다.",
+            ),
+        }
+
+    return {
+        "success": True,
+        "previous_branch": previous_branch,
+        "current_branch": branch_name,
+        "output": switch_result.get(
+            "output",
+            "",
+        ),
+    }
+

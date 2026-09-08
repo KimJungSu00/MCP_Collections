@@ -374,6 +374,71 @@ def get_github_pull_request(
         "html_url": pull_request["html_url"],
     }
 
+def create_github_pull_request(
+    owner: str,
+    repo: str,
+    title: str,
+    body: str,
+    head: str,
+    base: str = "main",
+    draft: bool = False,
+) -> dict:
+    """GitHub 저장소에 Pull Request를 생성합니다."""
+
+    title = title.strip()
+    body = body.strip()
+    head = head.strip()
+    base = base.strip()
+
+    if not title:
+        return {
+            "success": False,
+            "error": "Pull Request 제목이 비어 있습니다.",
+        }
+
+    if not head:
+        return {
+            "success": False,
+            "error": "head 브랜치가 비어 있습니다.",
+        }
+
+    if head == base:
+        return {
+            "success": False,
+            "error": "head와 base 브랜치는 달라야 합니다.",
+        }
+
+    endpoint = f"/repos/{owner}/{repo}/pulls"
+
+    data = {
+        "title": title,
+        "body": body,
+        "head": head,
+        "base": base,
+        "draft": draft,
+    }
+
+    result = github_post(
+        endpoint,
+        data,
+    )
+
+    if not result["success"]:
+        return result
+
+    pull_data = result["data"]
+
+    return {
+        "success": True,
+        "number": pull_data["number"],
+        "title": pull_data["title"],
+        "state": pull_data["state"],
+        "draft": pull_data["draft"],
+        "head": pull_data["head"]["ref"],
+        "base": pull_data["base"]["ref"],
+        "url": pull_data["html_url"],
+    }
+
 
 def get_github_labels(
     owner: str,
