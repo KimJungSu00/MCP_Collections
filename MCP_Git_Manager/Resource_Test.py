@@ -681,9 +681,162 @@ async def test_create_pull_request():
         indent=2,
     ))
 
+
+async def test_github_comparison():
+    comparison_uri = (
+        f"github://repos/"
+        f"{github_owner}/"
+        f"{github_repo}/"
+        f"compare/main/"
+        f"feature-mcp-prompt-workflow"
+    )
+
+    contents = await mcp_client.read_resource(
+        comparison_uri
+    )
+
+    comparison_data = json.loads(
+        contents[0].text
+    )
+
+    print("\nGitHub 브랜치 비교 결과")
+    print(json.dumps(
+        comparison_data,
+        ensure_ascii=False,
+        indent=2,
+    ))
+
+class PullRequestDraft(BaseModel):
+    title: str = Field(
+        description="Pull Request 제목",
+        min_length=1,
+        max_length=120,
+    )
+
+    body: str = Field(
+        description="Markdown 형식의 Pull Request 본문",
+        min_length=1,
+    )
+
+async def generate_pull_request_draft(
+    base: str,
+    head: str,
+) -> PullRequestDraft:
+    comparison_uri = (
+        f"github://repos/"
+        f"{github_owner}/"
+        f"{github_repo}/"
+        f"compare/{base}/{head}"
+    )
+
+    contents = await mcp_client.read_resource(
+        comparison_uri
+    )
+
+    comparison_data = json.loads(
+        contents[0].text
+    )
+
+    if not comparison_data["success"]:
+        raise RuntimeError(
+            comparison_data.get(
+                "error",
+                "브랜치 비교에 실패했습니다.",
+            )
+        )
+
+    if comparison_data["total_commits"] == 0:
+        raise RuntimeError(
+            "Pull Request에 포함할 커밋이 없습니다."
+        )
+
+    comparison_text = json.dumps(
+        comparison_data,
+        ensure_ascii=False,
+        indent=2,
+    )
+
+    prompt_result = await mcp_client.get_prompt(
+        "write_pull_request",
+        {
+            "comparison": comparison_text,
+        },
+    )
+
+    full_prompt = get_prompt_text(
+        prompt_result
+    )
+
+    response = await llm_client.responses.parse(
+        model="gpt-4o-mini",
+        input=full_prompt,
+        text_format=PullRequestDraft,
+    )
+
+    pull_request = response.output_parsed
+
+    if pull_request is None:
+        raise RuntimeError(
+            "Pull Request 내용 생성에 실패했습니다."
+        )
+
+    return pull_request
+
+async def test_pull_request_draft():
+    pull_request = (
+        await generate_pull_request_draft(
+            base="main",
+            head="feature-mcp-prompt-workflow",
+        )
+    )
+
+    print("\n생성된 PR 제목")
+    print(pull_request.title)
+
+    print("\n생성된 PR 본문")
+    print(pull_request.body)
+
+async def update_pull_request_from_comparison():
+    # Resource → Prompt → LLM
+    pull_request = (
+        await generate_pull_request_draft(
+            base="main",
+            head="feature-mcp-prompt-workflow",
+        )
+    )
+
+    print("\n생성된 PR 제목")
+    print(pull_request.title)
+
+    print("\n생성된 PR 본문")
+    print(pull_request.body)
+
+    # LLM 결과 → MCP Tool → GitHub PATCH
+    result = await mcp_client.call_tool(
+        "update_github_pull_request",
+        {
+            "owner": github_owner,
+            "repo": github_repo,
+            "pull_number": 5,
+            "title": pull_request.title,
+            "body": pull_request.body,
+        },
+    )
+
+    update_data = get_tool_result_data(
+        result
+    )
+
+    print("\nPull Request 수정 결과")
+    print(json.dumps(
+        update_data,
+        ensure_ascii=False,
+        indent=2,
+    ))
+
 async def main():
     async with mcp_client:
-        await test_create_pull_request()
+        await update_pull_request_from_comparison()
 
 if __name__ == "__main__":
     asyncio.run(main())
