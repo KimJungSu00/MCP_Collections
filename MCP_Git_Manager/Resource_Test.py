@@ -834,6 +834,35 @@ async def update_pull_request_from_comparison():
         indent=2,
     ))
 
+async def test_merge_pull_request():
+    result = await mcp_client.call_tool(
+        "merge_github_pull_request",
+        {
+            "owner": github_owner,
+            "repo": github_repo,
+            "pull_number": 5,
+            "merge_method": "squash",
+            "commit_title": (
+                "MCP Git 작업 Tool 및 기능 추가"
+            ),
+            "commit_message": (
+                "Git 조회, 변경, Prompt 기반 "
+                "문서 생성 기능을 추가합니다."
+            ),
+        },
+    )
+
+    merge_data = get_tool_result_data(
+        result
+    )
+
+    print("\nPull Request Merge 결과")
+    print(json.dumps(
+        merge_data,
+        ensure_ascii=False,
+        indent=2,
+    ))
+
 async def main():
     async with mcp_client:
         await update_pull_request_from_comparison()
