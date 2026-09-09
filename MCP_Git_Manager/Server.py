@@ -258,5 +258,49 @@ def create_github_pull_request(
         draft=draft,
     )
 
+@mcp.resource(
+    "github://repos/{owner}/{repo}/compare/{base}/{head}",
+    mime_type="application/json",
+)
+def get_github_comparison(
+    owner: str,
+    repo: str,
+    base: str,
+    head: str,
+) -> dict:
+    """두 GitHub 브랜치 사이의 커밋과 변경 파일을 반환합니다."""
+    return GitHUB_API_Resources.get_github_comparison(
+        owner=owner,
+        repo=repo,
+        base=base,
+        head=head,
+    )
+
+@mcp.prompt
+def write_pull_request(
+    comparison: str,
+) -> str:
+    """브랜치 비교 결과로 Pull Request 작성 지침을 생성합니다."""
+    return Resource_Prompts.make_pull_request_prompt(
+        comparison
+    )
+
+@mcp.tool
+def update_github_pull_request(
+    owner: str,
+    repo: str,
+    pull_number: int,
+    title: str | None = None,
+    body: str | None = None,
+) -> dict:
+    """기존 GitHub Pull Request의 제목과 본문을 수정합니다."""
+    return GitHUB_API_Resources.update_github_pull_request(
+        owner=owner,
+        repo=repo,
+        pull_number=pull_number,
+        title=title,
+        body=body,
+    )
+
 if __name__ == "__main__":
     mcp.run()

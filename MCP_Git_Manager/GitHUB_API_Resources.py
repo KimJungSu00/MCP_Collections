@@ -103,6 +103,46 @@ def github_post(
         "data": response_data,
     }
 
+def github_patch(endpoint: str,data: dict) -> dict:
+    url = f"https://api.github.com{endpoint}"
+
+    try:
+        response = requests.patch(
+            url,
+            headers=get_github_headers(),
+            json=data,
+            timeout=10,
+        )
+
+        response_data = response.json()
+
+    except requests.RequestException as error:
+        return {
+            "success": False,
+            "error": str(error),
+        }
+
+    except ValueError:
+        response_data = {
+            "message": response.text,
+        }
+
+    if not response.ok:
+        return {
+            "success": False,
+            "status_code": response.status_code,
+            "error": response_data.get(
+                "message",
+                "GitHub API 요청에 실패했습니다.",
+            ),
+        }
+
+    return {
+        "success": True,
+        "status_code": response.status_code,
+        "data": response_data,
+    }
+
 def get_github_repository_summary(owner: str,
     repo: str) -> dict:
     result = github_get(
@@ -506,4 +546,175 @@ def create_github_issue(
         "title": issue_data["title"],
         "state": issue_data["state"],
         "url": issue_data["html_url"],
+    }
+
+
+#두 GitHub 브랜치의 커밋과 변경 파일을 비교합니다.
+def get_github_comparison(
+    owner: str,
+    repo: str,
+    base: str,
+    head: str,
+) -> dict:
+
+
+    endpoint = (
+        f"/repos/{owner}/{repo}/compare/"
+        f"{base}...{head}"
+    )
+
+    result = github_get(endpoint)
+
+    if not result["success"]:
+        return result
+
+    comparison_data = result["data"]
+
+    commits = []
+
+    for commit in comparison_data.get(
+        "commits",
+        [],
+    ):
+        commit_info = commit.get(
+            "commit",
+            {},
+        )
+
+        author_info = commit_info.get(
+            "author",
+            {},
+        )
+
+        commits.append({
+            "hash": commit.get("sha", "")[:7],
+            "message": commit_info.get(
+                "message",
+                "",
+            ),
+            "author": author_info.get(
+                "name",
+                "",
+            ),
+            "date": author_info.get(
+                "date",
+                "",
+            ),
+        })
+
+    files = []
+
+    for file in comparison_data.get(
+        "files",
+        [],
+    ):
+        files.append({
+            "filename": file.get(
+                "filename",
+                "",
+            ),
+            "status": file.get(
+                "status",
+                "",
+            ),
+            "additions": file.get(
+                "additions",
+                0,
+            ),
+            "deletions": file.get(
+                "deletions",
+                0,
+            ),
+            "changes": file.get(
+                "changes",
+                0,
+            ),
+            "patch": file.get(
+                "patch",
+                "",
+            ),
+        })
+
+    return {
+        "success": True,
+        "base": base,
+        "head": head,
+        "status": comparison_data.get(
+            "status",
+            "",
+        ),
+        "ahead_by": comparison_data.get(
+            "ahead_by",
+            0,
+        ),
+        "behind_by": comparison_data.get(
+            "behind_by",
+            0,
+        ),
+        "total_commits": comparison_data.get(
+            "total_commits",
+            0,
+        ),
+        "commits": commits,
+        "files": files,
+        "url": comparison_data.get(
+            "html_url",
+            "",
+        ),
+    }
+
+
+def update_github_pull_request(
+    owner: str,
+    repo: str,
+    pull_number: int,
+    title: str | None = None,
+    body: str | None = None,
+) -> dict:
+    data = {}
+
+    if title is not None:
+        title = title.strip()
+
+        if not title:
+            return {
+                "success": False,
+                "error": "Pull Request 제목이 비어 있습니다.",
+            }
+
+        data["title"] = title
+
+    if body is not None:
+        data["body"] = body.strip()
+
+    if not data:
+        return {
+            "success": False,
+            "error": "수정할 내용이 없습니다.",
+        }
+
+    endpoint = (
+        f"/repos/{owner}/{repo}/pulls/"
+        f"{pull_number}"
+    )
+
+    result = github_patch(
+        endpoint,
+        data,
+    )
+
+    if not result["success"]:
+        return result
+
+    pull_data = result["data"]
+
+    return {
+        "success": True,
+        "number": pull_data["number"],
+        "title": pull_data["title"],
+        "body": pull_data["body"],
+        "state": pull_data["state"],
+        "head": pull_data["head"]["ref"],
+        "base": pull_data["base"]["ref"],
+        "url": pull_data["html_url"],
     }
