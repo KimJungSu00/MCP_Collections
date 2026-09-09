@@ -143,6 +143,46 @@ def github_patch(endpoint: str,data: dict) -> dict:
         "data": response_data,
     }
 
+def github_put(endpoint: str,data: dict) -> dict:
+    url = f"https://api.github.com{endpoint}"
+
+    try:
+        response = requests.put(
+            url,
+            headers=get_github_headers(),
+            json=data,
+            timeout=10,
+        )
+
+        response_data = response.json()
+
+    except requests.RequestException as error:
+        return {
+            "success": False,
+            "error": str(error),
+        }
+
+    except ValueError:
+        response_data = {
+            "message": response.text,
+        }
+
+    if not response.ok:
+        return {
+            "success": False,
+            "status_code": response.status_code,
+            "error": response_data.get(
+                "message",
+                "GitHub API 요청에 실패했습니다.",
+            ),
+        }
+
+    return {
+        "success": True,
+        "status_code": response.status_code,
+        "data": response_data,
+    }
+
 def get_github_repository_summary(owner: str,
     repo: str) -> dict:
     result = github_get(
@@ -717,4 +757,80 @@ def update_github_pull_request(
         "head": pull_data["head"]["ref"],
         "base": pull_data["base"]["ref"],
         "url": pull_data["html_url"],
+    }
+
+
+def merge_github_pull_request(
+    owner: str,
+    repo: str,
+    pull_number: int,
+    merge_method: str = "squash",
+    commit_title: str | None = None,
+    commit_message: str | None = None,
+    expected_sha: str | None = None,
+) -> dict:
+    """GitHub Pull Request를 병합합니다."""
+
+    allowed_methods = [
+        "merge",
+        "squash",
+        "rebase",
+    ]
+
+    if merge_method not in allowed_methods:
+        return {
+            "success": False,
+            "error": (
+                "merge_method는 merge, squash, "
+                "rebase 중 하나여야 합니다."
+            ),
+        }
+
+    if pull_number <= 0:
+        return {
+            "success": False,
+            "error": "올바른 PR 번호를 입력해야 합니다.",
+        }
+
+    data = {
+        "merge_method": merge_method,
+    }
+
+    if commit_title:
+        data["commit_title"] = commit_title.strip()
+
+    if commit_message:
+        data["commit_message"] = (
+            commit_message.strip()
+        )
+
+    if expected_sha:
+        data["sha"] = expected_sha.strip()
+
+    endpoint = (
+        f"/repos/{owner}/{repo}/pulls/"
+        f"{pull_number}/merge"
+    )
+
+    result = github_put(
+        endpoint,
+        data,
+    )
+
+    if not result["success"]:
+        return result
+
+    merge_data = result["data"]
+    merged = merge_data.get("merged", False)
+
+    return {
+        "success": merged,
+        "pull_number": pull_number,
+        "merged": merged,
+        "merge_method": merge_method,
+        "sha": merge_data.get("sha", ""),
+        "message": merge_data.get(
+            "message",
+            "",
+        ),
     }

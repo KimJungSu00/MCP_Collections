@@ -302,5 +302,26 @@ def update_github_pull_request(
         body=body,
     )
 
+@mcp.tool
+def merge_github_pull_request(
+    owner: str,
+    repo: str,
+    pull_number: int,
+    merge_method: str = "squash",
+    commit_title: str | None = None,
+    commit_message: str | None = None,
+    expected_sha: str | None = None,
+) -> dict:
+    """GitHub Pull Request를 지정한 방식으로 병합합니다."""
+    return GitHUB_API_Resources.merge_github_pull_request(
+        owner=owner,
+        repo=repo,
+        pull_number=pull_number,
+        merge_method=merge_method,
+        commit_title=commit_title,
+        commit_message=commit_message,
+        expected_sha=expected_sha,
+    )
+
 if __name__ == "__main__":
     mcp.run()
