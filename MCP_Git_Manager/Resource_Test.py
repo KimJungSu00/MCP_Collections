@@ -634,9 +634,56 @@ async def test_pull():
         if hasattr(content, "text"):
             print(content.text)
 
+async def test_create_branch():
+    result = await mcp_client.call_tool(
+        "create_and_switch_branch",
+        {
+            "branch_name": (
+                "feature-mcp-prompt-workflow"
+            ),
+        },
+    )
+
+    print("\n브랜치 생성 결과")
+
+    for content in result.content:
+        if hasattr(content, "text"):
+            print(content.text)
+
+async def test_create_pull_request():
+    result = await mcp_client.call_tool(
+        "create_github_pull_request",
+        {
+            "owner": github_owner,
+            "repo": github_repo,
+            "title": "MCP Git 작업 Tool 추가",
+            "body": (
+                "## 변경사항\n\n"
+                "- Git staging Tool 추가\n"
+                "- AI 커밋 메시지 생성 기능 추가\n"
+                "- commit, pull, push Tool 추가\n"
+                "- 브랜치 생성 및 이동 Tool 추가"
+            ),
+            "head": "feature-mcp-prompt-workflow",
+            "base": "main",
+            "draft": False,
+        },
+    )
+
+    pull_data = get_tool_result_data(
+        result
+    )
+
+    print("\nPull Request 생성 결과")
+    print(json.dumps(
+        pull_data,
+        ensure_ascii=False,
+        indent=2,
+    ))
+
 async def main():
     async with mcp_client:
-        await test_pull()
+        await test_create_pull_request()
 
 if __name__ == "__main__":
     asyncio.run(main())

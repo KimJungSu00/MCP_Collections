@@ -232,7 +232,31 @@ def pull_current_branch(remote: str = "origin") -> dict:
     """원격 저장소에서 현재 브랜치의 변경사항을 가져옵니다."""
     return Local_Tools.pull_current_branch(remote)
 
-#테스트
+@mcp.tool
+def create_and_switch_branch(branch_name: str) -> dict:
+    """새 Git 브랜치를 만들고 해당 브랜치로 이동합니다."""
+    return Local_Tools.create_and_switch_branch(branch_name)
+
+@mcp.tool
+def create_github_pull_request(
+    owner: str,
+    repo: str,
+    title: str,
+    body: str,
+    head: str,
+    base: str = "main",
+    draft: bool = False,
+) -> dict:
+    """GitHub 저장소에 새로운 Pull Request를 생성합니다."""
+    return GitHUB_API_Resources.create_github_pull_request(
+        owner=owner,
+        repo=repo,
+        title=title,
+        body=body,
+        head=head,
+        base=base,
+        draft=draft,
+    )
 
 if __name__ == "__main__":
     mcp.run()
