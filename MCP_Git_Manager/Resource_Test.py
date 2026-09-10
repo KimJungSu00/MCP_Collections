@@ -864,9 +864,28 @@ async def test_merge_pull_request():
         indent=2,
     ))
 
+async def test_switch_to_main():
+    result = await mcp_client.call_tool(
+        "switch_branch",
+        {
+            "branch_name": "main",
+        },
+    )
+
+    switch_data = get_tool_result_data(
+        result
+    )
+
+    print("\n브랜치 이동 결과")
+    print(json.dumps(
+        switch_data,
+        ensure_ascii=False,
+        indent=2,
+    ))
+
 async def main():
     async with mcp_client:
-        await update_pull_request_from_comparison()
+        await test_switch_to_main()
 
 if __name__ == "__main__":
     asyncio.run(main())

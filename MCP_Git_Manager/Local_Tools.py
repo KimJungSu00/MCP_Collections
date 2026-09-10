@@ -455,3 +455,100 @@ def create_and_switch_branch(branch_name: str) -> dict:
         ),
     }
 
+def switch_branch(branch_name: str) -> dict:
+    branch_name = branch_name.strip()
+
+    if not branch_name:
+        return {
+            "success": False,
+            "error": "이동할 브랜치 이름이 비어 있습니다.",
+        }
+
+    current_result = Git_Command.run_git_command(
+        [
+            "branch",
+            "--show-current",
+        ]
+    )
+
+    if not current_result["success"]:
+        return {
+            "success": False,
+            "error": current_result.get(
+                "error",
+                "현재 브랜치 확인에 실패했습니다.",
+            ),
+        }
+
+    current_branch = current_result.get(
+        "output",
+        "",
+    ).strip()
+
+    if current_branch == branch_name:
+        return {
+            "success": True,
+            "previous_branch": current_branch,
+            "current_branch": current_branch,
+            "changed": False,
+            "message": "이미 해당 브랜치에 있습니다.",
+        }
+
+    # 커밋되지 않은 변경사항 확인
+    status_result = Git_Command.run_git_command(
+        [
+            "status",
+            "--porcelain",
+        ]
+    )
+
+    if not status_result["success"]:
+        return {
+            "success": False,
+            "error": status_result.get(
+                "error",
+                "Git 상태 확인에 실패했습니다.",
+            ),
+        }
+
+    changed_files = status_result.get(
+        "output",
+        "",
+    ).strip()
+
+    if changed_files:
+        return {
+            "success": False,
+            "error": (
+                "커밋되지 않은 변경사항이 있어 "
+                "브랜치를 이동할 수 없습니다."
+            ),
+            "changed_files": changed_files.splitlines(),
+        }
+
+    switch_result = Git_Command.run_git_command(
+        [
+            "switch",
+            branch_name,
+        ]
+    )
+
+    if not switch_result["success"]:
+        return {
+            "success": False,
+            "error": switch_result.get(
+                "error",
+                "브랜치 이동에 실패했습니다.",
+            ),
+        }
+
+    return {
+        "success": True,
+        "previous_branch": current_branch,
+        "current_branch": branch_name,
+        "changed": True,
+        "output": switch_result.get(
+            "output",
+            "",
+        ),
+    }

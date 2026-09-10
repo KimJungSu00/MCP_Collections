@@ -323,5 +323,13 @@ def merge_github_pull_request(
         expected_sha=expected_sha,
     )
 
+
+@mcp.tool
+def switch_branch(branch_name: str) -> dict:
+    """이미 존재하는 로컬 Git 브랜치로 이동합니다."""
+    return Local_Tools.switch_branch(
+        branch_name
+    )
+
 if __name__ == "__main__":
     mcp.run()
